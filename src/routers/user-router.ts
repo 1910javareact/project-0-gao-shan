@@ -17,7 +17,7 @@ userRouter.get('', controllerGetUsers)
 
 function controllerSaveUser(req, res) {
     let { body } = req
-    let newU = new User(0, '', '', '', '', '')
+    let newU = new User(0, '', '', '', '', '', '')
     for (let key in newU) {
         if (body[key] = undefined) {
             res.sendStatus(400)

@@ -6,15 +6,15 @@ export class User {
     firstName: string // not null
     lastName: string // not null
     email: string // not null
-    // role: Role 
-    constructor(userId:number,username:string, password:string, firstName:string, lastName:string, email:string /*role:Role*/){
+    role: string //temp assignment for testing login endpoint 191120
+    constructor(userId:number,username:string, password:string, firstName:string, lastName:string, email:string, role:string){
       this.userId = userId
       this.username = username
       this.password = password
       this.firstName = firstName
       this.lastName = lastName
       this.email = email
-      // this.role = role
+      this.role = role
     }
 }
     
