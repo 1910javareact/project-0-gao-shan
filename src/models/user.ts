@@ -1,4 +1,4 @@
-// import { Role } from "./role"
+import { Role } from "./role"
 export class User {
     userId: number // primary key
     username: string // not null, unique
@@ -6,8 +6,8 @@ export class User {
     firstName: string // not null
     lastName: string // not null
     email: string // not null
-    role: string //temp assignment for testing login endpoint 191120
-    constructor(userId:number,username:string, password:string, firstName:string, lastName:string, email:string, role:string){
+    role: Role //temp assignment for testing login endpoint 191120
+    constructor(userId:number,username:string, password:string, firstName:string, lastName:string, email:string, role:Role){
       this.userId = userId
       this.username = username
       this.password = password

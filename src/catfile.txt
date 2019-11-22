@@ -1,0 +1,242 @@
+     1	import { User } from "./models/user"
+     2	import { Role } from "./models/role"
+     3	import { Receipt } from "./models/receipt"
+     4	import { RType } from "./models/receipt-type"
+     5	import { RStatus } from "./models/receipt-status"
+     6	
+     7	
+     8	export let roles = [
+     9	    new Role(0, "Admin")
+    10	]
+    11	
+    12	export let users = [
+    13	    new User(0, "aa", "bb", "cc", "dd", "ee", roles[0])
+    14	]
+    15	
+    16	export let rtypes = [
+    17	    new RType(0, "Food")
+    18	]
+    19	
+    20	export let rstatus = [
+    21	    new RStatus(0, "Pending")
+    22	]
+    23	
+    24	export let receipt = [
+    25	    new Receipt(0, users[0], 0, 0, 0, "asdf", rstatus[0], rtypes[0])
+    26	]
+    27	
+    28	import express from 'express'
+    29	import bodyparser from 'body-parser'
+    30	import { userRouter } from './routers/user-router'
+    31	import { loginRouter } from './routers/login-router'
+    32	import { receiptRouter } from './routers/receipt-router'
+    33	import { loggingMiddleware } from './middleware/logging-middleware'
+    34	import { sessionMiddleware } from './middleware/session-middleware'
+    35	
+    36	const app = express()
+    37	app.use(bodyparser.json())
+    38	app.use(loggingMiddleware)
+    39	app.use(sessionMiddleware)
+    40	
+    41	//this is where we put the requests to our routers
+    42	
+    43	// app.use('/login', loginRouter)
+    44	app.use('/users', userRouter)
+    45	//make indidual endpoints for each user, authenticated through the login endpoint
+    46	app.use('/receipts', receiptRouter)
+    47	app.use('/login', loginRouter)
+    48	
+    49	
+    50	app.listen(1001, ()=>{
+    51	    console.log('app has started');   
+    52	})export function authorization(authRoles:string[]){
+    //modify user module to include role as some type of value to make sure that some type of value exits in our user model
+    return (req,res,next)=>{
+        let isAuth = false
+        if(!req.session.user){
+            res.status(401).send('Please Login')
+            return
+        }
+        for(let userRole of req.session.user.roles){
+            if(authRoles.includes(userRole)){
+                isAuth = true
+            }
+        }
+        if(isAuth){
+            next()
+        }else{
+            res.status(403).send('You are unauthorized for this endpoint') 
+        }
+    }
+}import { Request } from "express"
+
+export function loggingMiddleware(req:Request,res,next){
+    console.log(`request url:${req.url} and request method:${req.method} and request origin:${req.ip}`)
+    next()
+}import session from 'express-session'
+
+const sess = {
+    secret: 'secret',
+    cookie: {secure:false},
+    resave: false,
+    saveUninitialized: false
+}
+
+export const sessionMiddleware = session(sess)export class RStatus{
+    statusId: number // primary key
+    status: string // not null, unique; `Pending`, `Approved`, or `Denied`.
+    constructor(statusId: number, status: string){
+        this.statusId = statusId
+        this.status = status
+    }
+}import { User } from "./user"
+import { RStatus } from "./receipt-status"
+import { RType } from "./receipt-type"
+export class Receipt {
+        reimbursementId: number // primary key
+        author: User  // foreign key -> User, not null
+        amount: number  // not null
+        dateSubmitted: number // not null
+        dateResolved: number // not null
+        description: string // not null
+        status: RStatus // foreign ey -> ReimbursementStatus, not null
+        type: RType // foreign key -> ReimbursementType
+        constructor(reimbusementId:number, author: User, amount: number, dateSubmitted: number, dateResolved: number, description: string, status: RStatus, type: RType){
+            this.reimbursementId = reimbusementId
+            this.author = author
+            this.dateSubmitted = dateSubmitted
+            this.dateResolved = dateResolved
+            this.description = description
+            this.status = status
+            this.type = type
+        }
+}export class RType {
+    typeId: number // primary key
+    type: string // not null, unique
+    constructor(typeId:number, type:string){
+        this.typeId = typeId
+        this.type = type
+    }
+}export class Role {
+    roleId: number // primary key
+    role: string // not null, unique // two types : finance mgr and employee; employee cannot access mgr endpoint; not null
+    constructor(roleId: number, role: string){
+        this.roleId = roleId
+        this.role = role
+    }
+}import { Role } from "./role"
+export class User {
+    userId: number // primary key
+    username: string // not null, unique
+    password: string // not null
+    firstName: string // not null
+    lastName: string // not null
+    email: string // not null
+    role: Role //temp assignment for testing login endpoint 191120
+    constructor(userId:number,username:string, password:string, firstName:string, lastName:string, email:string, role:Role){
+      this.userId = userId
+      this.username = username
+      this.password = password
+      this.firstName = firstName
+      this.lastName = lastName
+      this.email = email
+      this.role = role
+    }
+}
+    import { users } from "../database"
+
+export function daoGetUsernameAndPassword(username: string, password: string){
+    for(let u of users){
+        if(u.username === username && u.password === password){
+            return u
+        }
+    }
+    throw {
+        status: 401,
+        message: 'Bad credentials'
+    }
+}import { User } from "../models/user"
+import { users } from "../database"
+
+export function daoGetAllUsers():User[]{
+    return users
+}
+
+export function daoSaveOneUser(u:User){
+    users.push(u)
+    return true
+}import express from 'express'
+//no need to import ANY model because we are receiving the req!
+import { getUserByUsernameAndPassword } from "../services/login-service"
+
+export const loginRouter = express.Router()
+
+function authUser(req,res) {
+    let {username, password} = req.body
+    if(!username || !password){
+        res.status(400).send('Please enter a username and password')
+    } 
+    try {
+        //add service method for getting username and pw to new file login-service
+        let user = getUserByUsernameAndPassword(username, password)
+        req.session.user = user
+        res.json(user)
+    }catch(e){
+        res.status(e.status).send(e.message)
+    } 
+}
+
+loginRouter.post('', authUser)import express from 'express'
+import { getAllUsers, saveOneUser } from "../services/user-service"
+import { User } from '../models/user'
+
+export const userRouter = express.Router()
+
+function controllerGetUsers(req, res) {
+    let users = getAllUsers()
+    if (users) {
+        res.json(users)
+    }
+    else {
+        res.sendStatus(500)
+    }
+}
+userRouter.get('', controllerGetUsers)
+
+function controllerSaveUser(req, res) {
+    let { body } = req
+    let newU = new User(0, '', '', '', '', '', '')
+    for (let key in newU) {
+        if (body[key] = undefined) {
+            res.sendStatus(400)
+        }
+        else {
+            newU[key] = body[key]
+        }
+    }
+    if (saveOneUser(newU)) {
+        res.sendStatus(201)
+    } else {
+        res.sendStatus(400)
+    }
+}
+
+
+
+userRouter.put('', controllerSaveUser)
+//no need for a dao repo yet b/c we are not reading/writing from database?
+//no, still need a dao. NO NEED FOR A MODEL HERE
+import { daoGetUsernameAndPassword } from "../repositories/login-dao"
+
+export function getUserByUsernameAndPassword(username:string, password:string){
+    return daoGetUsernameAndPassword(username, password)
+}import { User } from "../models/user"
+import { daoGetAllUsers, daoSaveOneUser } from "../repositories/user-dao"
+
+export function getAllUsers():User[]{
+    return daoGetAllUsers()
+}
+
+export function saveOneUser(u:User){
+    return daoSaveOneUser(u)
+}
