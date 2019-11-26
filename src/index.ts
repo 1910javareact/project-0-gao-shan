@@ -1,25 +1,36 @@
-import express from 'express'
-import bodyparser from 'body-parser'
-import { userRouter } from './routers/user-router'
-import { loginRouter } from './routers/login-router'
-import { receiptRouter } from './routers/receipt-router'
-import { loggingMiddleware } from './middleware/logging-middleware'
-import { sessionMiddleware } from './middleware/session-middleware'
+import express from 'express';
+import bodyparser from 'body-parser';
+import { userRouter } from './router/user-router';
+import { loggingMiddleware } from './middleware/logging-middleware';
+import { sessionMiddleware } from './middleware/session-middleware';
+import { getUserByUsernameAndPassword } from './service/login-service';
+import { reimbursementRouter } from './router/reimbursement-router'
 
-const app = express()
-app.use(bodyparser.json())
-app.use(loggingMiddleware)
-app.use(sessionMiddleware)
+const app = express();
 
-//this is where we put the requests to our routers
+app.use(bodyparser.json());
+app.use(loggingMiddleware);
+app.use(sessionMiddleware);
 
-// app.use('/login', loginRouter)
-app.use('/users', userRouter)
-//make indidual endpoints for each user, authenticated through the login endpoint
-app.use('/receipts', receiptRouter)
-app.use('/login', loginRouter)
+async function authUser(req, res) {
+    let {username, password} = req.body
+    console.log(username)
+    console.log(password)
+    if (!username || !password){
+        res.status(400).send('Please enter a username and password');
+    }
+    try {
+        const user = await getUserByUsernameAndPassword(username, password);
+        req.session.user = user;
+        res.json(user);
+    } catch(e) {
+        res.status(e.status).send(e.message);
+    } 
+}
+app.post('/login', authUser);
+app.use('/users', userRouter);
+app.use('/reimbursement', reimbursementRouter)
 
-
-app.listen(1001, ()=>{
-    console.log('app has started');   
-})
+app.listen(8888, () => {
+    console.log('app has started');
+});

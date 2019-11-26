@@ -1,18 +1,24 @@
-touch catfile.txt
-find ./*.ts | xargs cat -n > catfile.txt
+touch .catfile.txt
+find ./*.ts | xargs cat -n > .catfile.txt
 cd middleware
-find ./*.ts | xargs cat | tee -a ../catfile.txt
+find ./*.ts | xargs cat | tee -a ../.catfile.txt
 cd ..
-cd models
-find ./*.ts | xargs cat | tee -a ../catfile.txt
+cd model
+find ./*.ts | xargs cat | tee -a ../.catfile.txt
 cd ..
-cd repositories
-find ./*.ts | xargs cat | tee -a ../catfile.txt
+cd repository
+find ./*.ts | xargs cat | tee -a ../.catfile.txt
 cd ..
-cd routers
-find ./*.ts | xargs cat | tee -a ../catfile.txt
+cd router
+find ./*.ts | xargs cat | tee -a ../.catfile.txt
 cd ..
-cd services
-find ./*.ts | xargs cat | tee -a ../catfile.txt
+cd service
+find ./*.ts | xargs cat | tee -a ../.catfile.txt
 cd ..
-cat -n catfile.txt catfile.txt
+cd util
+find ./*.ts | xargs cat | tee -a ../.catfile.txt
+cd ..
+cd dto
+find ./*.ts | xargs cat | tee -a ../.catfile.txt
+cd ..
+cat -n .catfile.txt .catfile.txt

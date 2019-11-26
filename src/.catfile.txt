@@ -1,0 +1,370 @@
+     1	import express from 'express';
+     2	import bodyparser from 'body-parser';
+     3	import { userRouter } from './router/user-router'
+     4	import { loggingMiddleware } from './middleware/logging-middleware';
+     5	import { sessionMiddleware } from './middleware/session-middleware';
+     6	import { loginRouter } from './router/login-router';
+     7	
+     8	const app = express();
+     9	
+    10	app.use(bodyparser.json());
+    11	app.use(loggingMiddleware);
+    12	app.use(sessionMiddleware);
+    13	
+    14	app.use('/users', userRouter);
+    15	app.use('/login', loginRouter);
+    16	app.listen(8888, () => {
+    17	    console.log('app has started');
+    18	});//we are going to leverage the factory design pattern
+//we are going to build a middleware factory
+//we will give some config
+//it will 'build' a middleware function using that config
+
+export function authorization(authRoles: string[]) {//authRoles, is our config
+//I want to return a middleware function
+//generated using these authoRoles
+
+return (req, res, next) => {
+    let isAuth = false;
+    //lets check for being logged in
+    if (!req.session.user) {
+        res.status(401).send('Please Login');
+        return;
+    }
+    for (const userRole of req.session.user.roles) {
+        if (authRoles.includes(userRole)) {
+            isAuth = true;
+        }
+    }
+    if (isAuth) {
+        next();
+    } else {
+        res.status(403).send('You are unauthorized for this endpoint');
+    }
+};
+
+}import { Request } from 'express';
+
+
+
+export function loggingMiddleware(req: Request, res, next) {
+    console.log(`request url:${req.url} and request method:${req.method} and request origin:${req.ip}`);
+    //we need to remember to call next
+    //or the request can never move on
+    next();
+}import session from 'express-session';
+
+//this is our initial config for the session function
+const sess = {
+    secret: 'secret',
+    cookie: {secure: false},
+    resave: false,
+    saveUninitialized: false
+};
+
+//the session function follows a factory pattern
+//in js this is also like the higher order function pattern
+//this means, we pass in config to the session function
+//and it returns a new function generated using that config
+
+export const sessionMiddleware = session(sess);
+export class User {
+    userId: number;
+    name: string;
+    username: string;
+    password: string;
+    accountBalance: number;
+    socialCredit: number;
+    role: string[]; /* we are going to pass the role object as a string, and validate/write values in DB*/
+    constructor(userId: number, name: string, username: string, password: string, accountBalance: number, socialCredit: number, role: string[]){
+        this.userId = userId;
+        this.name = name;
+        this.password = password;
+        this.username = username;
+        this.accountBalance = accountBalance;
+        this.socialCredit = socialCredit;
+        this.role = role;
+    }
+}import { Pool } from 'pg';
+console.log({
+    user: process.env['PRC_USERNAME'],
+    host: process.env['PRC_HOST'],
+    database: process.env['PRC_DATABASE'],
+    port: 5432,
+    max: 5,
+});
+
+export const connectionPool: Pool = new Pool({
+    user: process.env['PRC_USERNAME'],
+    host: process.env['PRC_HOST'],
+    database: process.env['PRC_DATABASE'],
+    password: process.env['PRC_PASSWORD'],
+    port: 5432,
+    max: 5,
+});
+
+import { User } from '../model/user'
+import { PoolClient } from 'pg'
+import { connectionPool } from '.'
+export async function daoGetUsernameAndPassword(username: string, password: string): Promise<User>{
+    let client: PoolClient
+    try {
+        client = await connectionPool.connect()
+        const result = await client.query('SELECT * FROM prc.users WHERE "username" === users.user_name && "password" === users.password')
+        result.rows[0]
+    } catch (e) {
+        
+    };
+}import { PoolClient } from 'pg';
+import { connectionPool } from '.';
+import { userDTOtoUser, multiUserDTOConverter } from '../util/UserDTO-to-user';
+import { User } from '../model/user';
+
+export async function daoGetAllUsers(): Promise<User[]>{
+    let client: PoolClient;
+    try {
+        client = await connectionPool.connect();
+        console.log("got to the try point with the connectionto the db")
+        const result = await client.query('SELECT * FROM prc.users natural join prc.users_roles natural join prc.roles');
+        return multiUserDTOConverter(result.rows);
+    } catch (e) {
+        console.log(e);
+        throw {
+            status: 500,
+            message: 'Dao Error'
+        }
+    } finally {
+        client && client.release();
+    }
+}
+
+export async function daoGetUserById(id: number): Promise<User> {
+    let client: PoolClient
+    try {
+        client = await connectionPool.connect()
+        const result = await client.query('SELECT * FROM prc.users natural join prc.users_roles natural join prc.roles where user_id = $1', [id])
+        if (result.rowCount > 0) {
+            return userDTOtoUser(result.rows)
+        } else {
+            throw 'User does not exist'
+        }
+    } catch(e) {
+        if (e === 'User does not exist') {
+            throw {
+                status: 404,
+                message: 'This user does not exist'
+            }
+        } else {
+            throw {
+                status: 500,
+                message: 'Internal Server Error'
+            }
+        }
+    } finally {
+        client && client.release()
+    }
+}
+
+export async function daoSaveOneUser(u: User): Promise<User> {
+    let client: PoolClient
+    client = await connectionPool.connect()
+    try {
+        await client.query('BEGIN')
+        const result = await client.query('INSERT INTO prc.users ("name", username, "password", account_balance, social_credit) values ($1, $2, $3, $4, $5) RETURNING user_id',
+        [u.name, u.username, u.password, u.accountBalance, u.socialCredit])
+        for (const r of u.role){
+            let roleId = 0
+            switch (r){
+                case 'Admin':
+                    roleId = 1
+                    break;
+                case 'Finance Manager':
+                    roleId = 2
+                    break
+                default:
+                    roleId = 3
+                    break
+            }
+            await client.query('INSERT INTO prc.users_roles VALUES($1,$2)',
+            [result.rows[0].user_id, roleId])
+        }
+        u.userId = result.rows[0].user_id
+        await client.query('COMMIT')
+        return u
+    } catch(e) {
+        await client.query('ROLLBACK')
+        console.log(e)
+        throw {
+            status: 500,
+            message: 'Internal Server Error'
+        }
+    } finally {
+        client && client.release()
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import express from 'express';
+import { getUserByUsernameAndPassword } from '../service/login-service';
+
+export const loginRouter = express.Router();
+
+async function authUser(req, res) {
+    const {username, password} = req.body;
+    if (!username || !password){
+        res.status(400).send('Please enter a username and password');
+    }
+    try {
+        const user = await getUserByUsernameAndPassword(username, password);
+        req.session.user = user;
+        res.json(user);
+    } catch(e) {
+        res.status(e.status).send(e.message);
+    }
+}
+
+loginRouter.post('', authUser);import express from 'express';
+import { User } from '../model/user'
+import { getAllUsers, getUserById, saveOneUser } from '../service/user-service';
+
+export const userRouter = express.Router();
+
+async function controllerGetUsers(req, res) {
+    try {
+        const users = await getAllUsers();
+        res.json(users);
+    } catch (e) {
+        console.log(e);
+        res.status(e.status).send(e.message);
+    }
+}
+
+userRouter.get('', controllerGetUsers);
+
+async function controllerGetUserById(req, res){
+    const id = +req.params.id
+    if (isNaN(id)){
+        res.sendStatus(400)
+    } else {
+        try {
+            const user = await getUserById(id)
+            res.json(user)
+        } catch(e) {
+            console.log(e);
+            res.status(e.status).send(e.message);
+        }
+    }
+}
+
+userRouter.get('/:id', controllerGetUserById)
+
+async function controllerSaveOneUser(req, res){
+    const { body } = req
+    const newUser = new User(0,'','','',0,0,[])
+    for (const key in newUser){
+        if (body[key] === undefined) {
+            res.status(400).send('Make sure you filled out all the fields')
+            break
+        } else {
+            newUser[key] = body[key]
+        }
+    }
+    try {
+        const user = await saveOneUser(newUser)
+        res.status(201).json(user)
+    } catch (e) {
+        console.log(e)
+        res.status(e.status).send(e.message)
+    }
+}
+
+userRouter.post('', controllerSaveOneUser)//no need for a dao repo yet b/c we are not reading/writing from database?
+//no, still need a dao. NO NEED FOR A MODEL HERE
+import { daoGetUsernameAndPassword } from '../repository/login-dao';
+
+export function getUserByUsernameAndPassword(username: string, password: string){
+    return daoGetUsernameAndPassword(username, password);
+}import { User } from '../model/user';
+import { daoGetAllUsers, daoGetUserById, daoSaveOneUser } from '../repository/user-dao';
+
+export async function getAllUsers(): Promise<User[]> {
+    try {
+        return await daoGetAllUsers();
+    } catch (e) {
+        console.log(e);
+        throw e;
+    }
+}
+
+export async function getUserById(id): Promise<User> {
+    try {
+        return await daoGetUserById(id)
+    } catch(e) {
+        console.log(e)
+        throw e
+    }
+}
+
+export async function saveOneUser(u:User): Promise<User> {
+    try {
+        return await daoSaveOneUser(u)
+    } catch (e) {
+        console.log(e)
+        throw e
+    }
+}import { UserDTO } from '../dto/user-dto';
+import { User } from '../model/user';
+
+export function userDTOtoUser(user: UserDTO[]): User {
+    const roles = [];
+    for (const u of user){
+        roles.push(u.role_name);
+    }
+    return new User(
+        user[0].user_id,
+        user[0].name,
+        user[0].password,
+        user[0].username,
+        user[0].account_balance,
+        user[0].social_credit,
+        roles);
+}
+
+export function multiUserDTOConverter(user: UserDTO[]): User[]{
+    let currentUser: UserDTO[] = [];
+    const result: User[] = [];
+    for (const u of user){
+        if (currentUser.length === 0){
+            currentUser.push(u);
+        } else if (currentUser[0].user_id === u.user_id) {
+            currentUser.push(u);
+        } else {
+            result.push(userDTOtoUser(currentUser));
+            currentUser = [];
+            currentUser.push(u);
+        }
+    }
+    result.push(userDTOtoUser(currentUser));
+    return result;
+}export class UserDTO {
+    user_id: number;
+    name: string;
+    username: string;
+    password: string;
+    account_balance: number;
+    social_credit: number;
+    role_id: number;
+    role_name: string;
+}
