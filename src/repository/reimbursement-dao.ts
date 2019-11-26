@@ -25,7 +25,7 @@ export async function daoFindReimbursementsByUser(id: number): Promise<Reimburse
     let client: PoolClient
     try {
         client = await connectionPool.connect()
-        const result = await client.query('SELECT * FROM prc.reimbursements WHERE reimbursement_id = $1',
+        const result = await client.query('SELECT * FROM prc.reimbursements WHERE author = $1',
         [id])
         return multiReimbursementsDTOConverter(result.rows)
     } catch(e) {
