@@ -1,7 +1,8 @@
 import express from 'express';
 //import { User } from '../model/user'
 //import { Reimbursement } from '../model/reimbursement'
-import { findReimbursementsByStatus , findReimbursementsByUser, /*submitReimbursement, updateReimbursement */ } from '../service/reimbursement-service'
+import { findReimbursementsByStatus , findReimbursementsByUser, submitReimbursement /*, updateReimbursement */ } from '../service/reimbursement-service'
+import { Reimbursement } from '../model/reimbursement';
 
 export const reimbursementRouter = express.Router()
 
@@ -35,17 +36,27 @@ async function controllerFindReimbursementsByUser(req, res) {
 }
 reimbursementRouter.get('/byUser/:id', controllerFindReimbursementsByUser)
 
-// async function controllerSubmitReimbursement(req, res) {
-    
-//     try {
-//         return await submitReimbursement
-//     } catch(e) {
-//         console.log(e)
-//         res.status(e.status).send(e.message);
-//     }
-// }
+async function controllerSubmitReimbursement(req, res) {
+    const { body } = req
+    const newReimbursement = new Reimbursement(0, 0, 0, '', 0)
+    for (const key in newReimbursement){
+        if (body[key] === undefined) {
+            res.status(400).send('Make sure to fill out all of your fields')
+            break
+        } else {
+            newReimbursement[key] = body[key]
+        }
+    }
+    try {
+        const reimbursement = await submitReimbursement(newReimbursement)
+        res.status(201).json(reimbursement)
+    } catch(e) {
+        console.log(e)
+        res.status(e.status).send(e.message);
+    }
+}
 
-// reimbursementRouter.post('', controllerSubmitReimbursement)
+reimbursementRouter.post('/new-reimbursement', controllerSubmitReimbursement)
 
 // async function controllerUpdateReimbursement(req, res) {
     
