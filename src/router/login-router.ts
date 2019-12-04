@@ -19,4 +19,4 @@ export async function authUser(req, res) {
     } 
 }
 
-loginRouter.get('', authUser)
+loginRouter.post('', authUser)

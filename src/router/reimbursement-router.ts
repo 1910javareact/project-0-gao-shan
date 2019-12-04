@@ -21,7 +21,7 @@ async function controllerFindReimbursementsByStatus(req, res) {
         res.status(e.status).send(e.message);
     }
 }
-reimbursementRouter.get('/byStatus/:id', auth(['Finance Manager']), controllerFindReimbursementsByStatus)
+reimbursementRouter.get('/byStatus/:id', auth(['Finance Manager', 'Admin']), controllerFindReimbursementsByStatus)
 
 async function controllerFindReimbursementsByUser(req, res) {
     const id = +req.params.id
@@ -36,7 +36,7 @@ async function controllerFindReimbursementsByUser(req, res) {
         res.status(e.status).send(e.message);
    }
 }
-reimbursementRouter.get('/byUser/:id', controllerFindReimbursementsByUser)
+reimbursementRouter.get('/byUser/:id', auth(['Finance Manager', 'Admin']), controllerFindReimbursementsByUser)
 
 async function controllerSubmitReimbursement(req, res) {
     const { body } = req
@@ -58,7 +58,7 @@ async function controllerSubmitReimbursement(req, res) {
     }
 }
 
-reimbursementRouter.post('/new-reimbursement', controllerSubmitReimbursement)
+reimbursementRouter.post('/new-reimbursement', auth(['Finance Manager', 'Admin', 'User']), controllerSubmitReimbursement)
 
 // async function controllerUpdateReimbursement(req, res) {
     

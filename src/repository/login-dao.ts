@@ -1,19 +1,19 @@
 import { User } from '../model/user'
 import { PoolClient } from 'pg'
-import {  multiUserDTOConverter } from '../util/UserDTO-to-user'
+import {  userDTOtoUser } from '../util/UserDTO-to-user'
 import { connectionPool } from '.'
-export async function daoGetUsernameAndPassword(username: string, password: string): Promise<User[]>{
+export async function daoGetUsernameAndPassword(username: string, password: string): Promise<User>{
     let client: PoolClient
     try {
         client = await connectionPool.connect()
-        const result = await client.query('SELECT * FROM prc.users u natural join prc.users_roles natural join prc.roles  WHERE "password" = $1 and username = $2',
-        [password, username])
+        const result = await client.query('SELECT * FROM prc.users natural join prc.users_roles natural join prc.roles WHERE username = $1 and "password" = $2 ',
+        [username, password])
+        console.log(result)
         if (result.rows !== null) {
-            return multiUserDTOConverter(result.rows)
+            return userDTOtoUser(result.rows)
         } else {
             throw 'Bad Credentials'
         }
-         
     } catch (e) {
         console.log(e)
         throw {

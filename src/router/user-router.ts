@@ -1,5 +1,6 @@
 import express from 'express';
 import { User } from '../model/user'
+import { auth } from '../middleware/auth-middleware'
 import { getAllUsers, getUserById, saveOneUser } from '../service/user-service';
 
 export const userRouter = express.Router();
@@ -14,7 +15,7 @@ async function controllerGetUsers(req, res) {
     }
 }
 
-userRouter.get('', controllerGetUsers);
+userRouter.get('', auth(['Admin']), controllerGetUsers);
 
 async function controllerGetUserById(req, res){
     const id = +req.params.id
@@ -31,7 +32,7 @@ async function controllerGetUserById(req, res){
     }
 }
 
-userRouter.get('/:id', controllerGetUserById)
+userRouter.get('/:id', auth(['Admin']), controllerGetUserById)
 
 async function controllerSaveOneUser(req, res){
     const { body } = req
@@ -53,4 +54,4 @@ async function controllerSaveOneUser(req, res){
     }
 }
 
-userRouter.post('', controllerSaveOneUser)
+userRouter.post('', auth(['Admin']), controllerSaveOneUser)

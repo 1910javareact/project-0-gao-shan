@@ -47,8 +47,8 @@ export async function daoPostReimbursement(r:Reimbursement): Promise<Reimburseme
         const result = await client.query('INSERT INTO prc.reimbursements (author, amount, description, status) values ($1, $2, $3, $4) RETURNING reimbursement_id',
         [r.author, r.amount, r.description, r.status]) //need to get the author id from the login value??
         //struncture of rsm-status table should needs another column that matches status type as number??
-        await client.query('INSERT INTO prc.reimbursement_status(status_name) values ($1)',
-        ['PENDING'])
+        // await client.query('INSERT INTO prc.reimbursement_status(status_name) values ($1)',
+        // ['PENDING'])
         //subtract the amount of the reimbursement from the 'author's' account; 
         //problem: do we have to convert currentBalance before working on it?
  /*       let currentBalance:number = await client.query('SELECT account_balance FROM prc.reimbursements r natural join prc.users u WHERE user_id = $1 and author = $2',

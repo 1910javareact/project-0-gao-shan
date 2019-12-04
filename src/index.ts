@@ -12,9 +12,9 @@ app.use(bodyparser.json());
 app.use(loggingMiddleware);
 app.use(sessionMiddleware);
 
-app.use('/login', authUser);
 app.use('/users', userRouter);
 app.use('/reimbursement', reimbursementRouter);
+app.use('/login', authUser);
 
 app.listen(8888, () => {
     console.log('app has started');

@@ -1,0 +1,7 @@
+cp package.json package-lock.json tsconfig.json tslint.json openTSAll pushCode /home/gaoshan/TS/project-0-191118
+cp -r src/ /home/gaoshan/TS/project-0-191118
+cd ..
+cd project-0-191118
+git add .
+git commit -m "auto-push from working directory"
+git push 

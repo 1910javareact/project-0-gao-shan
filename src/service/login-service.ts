@@ -3,7 +3,7 @@
 import { User } from '../model/user'
 import { daoGetUsernameAndPassword } from '../repository/login-dao';
 
-export async function getUserByUsernameAndPassword(username: string, password: string): Promise<User[]>{
+export async function getUserByUsernameAndPassword(username: string, password: string): Promise<User>{
     try {
         let result = await daoGetUsernameAndPassword(username, password);
         return result
