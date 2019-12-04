@@ -10,10 +10,10 @@ export function auth(authRoles: string[]) {//authRoles, is our config
     return (req, res, next) => {
         let isAuth = false;
         //lets check for being logged in
-        if (!req.session.user) {
-            res.status(401).send('Please Login');
-            return;
-        }
+        // if (!req.session.user) {
+        //     res.status(401).send('Please Login');
+        //     return;
+        // }
         const rolesResponse:string[] = req.session.user.role
         console.log(rolesResponse)
         for (const userRole of rolesResponse) {
