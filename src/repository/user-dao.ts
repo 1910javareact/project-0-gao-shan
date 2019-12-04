@@ -86,3 +86,7 @@ export async function daoSaveOneUser(u: User): Promise<User> {
     }
 }
 
+// export async function daoUpdateUser(u:User[]): Promise<User[]> {
+
+// }
+

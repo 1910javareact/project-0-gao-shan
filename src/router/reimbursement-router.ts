@@ -3,10 +3,12 @@ import express from 'express';
 //import { Reimbursement } from '../model/reimbursement'
 import { findReimbursementsByStatus , findReimbursementsByUser, submitReimbursement /*, updateReimbursement */ } from '../service/reimbursement-service'
 import { Reimbursement } from '../model/reimbursement';
+import { auth } from '../middleware/auth-middleware'
 
 export const reimbursementRouter = express.Router()
 
 async function controllerFindReimbursementsByStatus(req, res) {
+
     const status = +req.params.id
     if (isNaN(status)){
         res.sendStatus(400)
@@ -19,7 +21,7 @@ async function controllerFindReimbursementsByStatus(req, res) {
         res.status(e.status).send(e.message);
     }
 }
-reimbursementRouter.get('/byStatus/:id', controllerFindReimbursementsByStatus)
+reimbursementRouter.get('/byStatus/:id', auth(['Finance Manager']), controllerFindReimbursementsByStatus)
 
 async function controllerFindReimbursementsByUser(req, res) {
     const id = +req.params.id

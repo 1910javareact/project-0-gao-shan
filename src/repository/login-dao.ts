@@ -6,7 +6,7 @@ export async function daoGetUsernameAndPassword(username: string, password: stri
     let client: PoolClient
     try {
         client = await connectionPool.connect()
-        const result = await client.query('SELECT * FROM prc.users WHERE password = $1 and username = $2',
+        const result = await client.query('SELECT * FROM prc.users u natural join prc.users_roles natural join prc.roles  WHERE "password" = $1 and username = $2',
         [password, username])
         if (result.rows !== null) {
             return multiUserDTOConverter(result.rows)
