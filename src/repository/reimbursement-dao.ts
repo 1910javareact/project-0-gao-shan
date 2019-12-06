@@ -51,13 +51,21 @@ export async function daoPostReimbursement(r:Reimbursement): Promise<Reimburseme
         // ['PENDING'])
         //subtract the amount of the reimbursement from the 'author's' account; 
         //problem: do we have to convert currentBalance before working on it?
- /*       let currentBalance:number = await client.query('SELECT account_balance FROM prc.reimbursements r natural join prc.users u WHERE user_id = $1 and author = $2',
+
+        /* 
+            make the reimbursement in dao, then if we succeed, send reim_id back to service
+            then send another request off to user dao from reimbursement service layer to 
+            the user dao to make a request to update the account balance 
+            
+        */
+
+        let currentBalance:number = await client.query('SELECT account_balance FROM prc.reimbursements r natural join prc.users u WHERE user_id = $1 and author = $2',
         [r.author, r.author])
         let amount:number = r.amount
         console.log(currentBalance)
         const newBalance:number = currentBalance - amount
         await client.query('UPDATE prc.users SET account_balance = $1 WHERE user_id = $2',
-        [newBalance, r.author])     */
+        [newBalance, r.author])     
         await client.query('COMMIT')
         r.reimbursementId = result.rows[0].reimbursement_id
         return r
