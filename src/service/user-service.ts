@@ -1,5 +1,5 @@
 import { User } from '../model/user';
-import { daoGetAllUsers, daoGetUserById, daoSaveOneUser } from '../repository/user-dao';
+import { daoGetAllUsers, daoGetUserById, daoSaveOneUser, daoUpdateUser } from '../repository/user-dao';
 
 export async function getAllUsers(): Promise<User[]> {
     try {
@@ -23,6 +23,15 @@ export async function saveOneUser(u:User): Promise<User> {
     try {
         return await daoSaveOneUser(u)
     } catch (e) {
+        console.log(e)
+        throw e
+    }
+}
+
+export async function updateOneUser(u:User): Promise<User> {
+    try {
+        return await daoUpdateUser(u)
+    } catch(e) {
         console.log(e)
         throw e
     }

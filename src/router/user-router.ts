@@ -1,7 +1,7 @@
 import express from 'express';
 import { User } from '../model/user'
 import { auth } from '../middleware/auth-middleware'
-import { getAllUsers, getUserById, saveOneUser } from '../service/user-service';
+import { getAllUsers, getUserById, saveOneUser, updateOneUser } from '../service/user-service';
 
 export const userRouter = express.Router();
 
@@ -55,3 +55,20 @@ async function controllerSaveOneUser(req, res){
 }
 
 userRouter.post('', auth(['Admin']), controllerSaveOneUser)
+
+async function controllerUpdateUser(req, res){
+    const { body } = req
+    const dUser = new User(0,'','','',0,0,[])
+    for (const key in dUser){
+        dUser[key] = body[key]
+    }
+    try {
+        const user = await updateOneUser(dUser)
+        res.status(201).json(user)
+    } catch(e) {
+        console.log(e)
+        res.status(e.status).send(e.message)
+    }
+}
+
+userRouter.patch('/update', controllerUpdateUser)

@@ -86,7 +86,51 @@ export async function daoSaveOneUser(u: User): Promise<User> {
     }
 }
 
-// export async function daoUpdateUser(u:User[]): Promise<User[]> {
-
-// }
+export async function daoUpdateUser(u:User): Promise<User> {
+    let client:PoolClient
+    client = await connectionPool.connect()
+    try {
+       await client.query('BEGIN')
+        await client.query('UPDATE prc.users SET "name" = $2, "password" = $3, username = $4, account_balance = $5, social_credit = $6 WHERE user_id = $1',
+        [u.userId, u.name, u.password, u.username, u.accountBalance, u.socialCredit])
+        if (u.role != null || u.role != undefined /* || u.role[0] != '' || u.role[1] != '' || u.role[2] != '' */) {
+            await client.query('DELETE FROM prc.users_roles WHERE user_id = $1',
+            [u.userId])
+            for (const r of u.role){
+                let roleId = 0
+                switch (r){
+                    case 'Admin':
+                        roleId = 1
+                        break;
+                    case 'Finance Manager':
+                        roleId = 2
+                        break
+                    default:
+                        roleId = 3
+                        break
+                }
+            await client.query('INSERT INTO prc.users_roles VALUES($1,$2)',
+            [u.userId, roleId])
+            }   
+        }
+        await client.query('COMMIT')
+        let result = await client.query('SELECT * from prc.users natural join prc.users_roles natural join prc.roles WHERE user_id = $1',
+        [u.userId])
+        
+        if (result.rowCount > 0) {
+            return userDTOtoUser(result.rows)
+        } else {
+            throw 'User does not exist'
+        }
+    } catch(e) {
+       await client.query('ROLLBACK')
+        console.log(e)
+        throw {
+            status: 500,
+            message: 'Internal Server Error'
+        }
+    } finally {
+        client && client.release()
+    }
+}
 

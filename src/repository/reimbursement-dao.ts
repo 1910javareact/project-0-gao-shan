@@ -59,13 +59,13 @@ export async function daoPostReimbursement(r:Reimbursement): Promise<Reimburseme
             
         */
 
-        let currentBalance:number = await client.query('SELECT account_balance FROM prc.reimbursements r natural join prc.users u WHERE user_id = $1 and author = $2',
-        [r.author, r.author])
-        let amount:number = r.amount
-        console.log(currentBalance)
-        const newBalance:number = currentBalance - amount
-        await client.query('UPDATE prc.users SET account_balance = $1 WHERE user_id = $2',
-        [newBalance, r.author])     
+        /*    let currentBalance:number = await client.query('SELECT account_balance FROM prc.reimbursements r natural join prc.users u WHERE user_id = $1 and author = $2',
+            [r.author, r.author])
+            let amount:number = r.amount
+            console.log(currentBalance)
+            const newBalance:number = currentBalance - amount
+            await client.query('UPDATE prc.users SET account_balance = $1 WHERE user_id = $2',
+            [newBalance, r.author])     */
         await client.query('COMMIT')
         r.reimbursementId = result.rows[0].reimbursement_id
         return r
