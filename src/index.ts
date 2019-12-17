@@ -5,9 +5,11 @@ import { loggingMiddleware } from './middleware/logging-middleware';
 import { sessionMiddleware } from './middleware/session-middleware';
 import { authUser } from './router/login-router';
 import { reimbursementRouter } from './router/reimbursement-router'
+import { corsFilter } from './middleware/corsFilter'
 
 const app = express();
 
+app.use(corsFilter)
 app.use(bodyparser.json());
 app.use(loggingMiddleware);
 app.use(sessionMiddleware);
