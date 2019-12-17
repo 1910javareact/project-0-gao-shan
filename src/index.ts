@@ -9,8 +9,9 @@ import { corsFilter } from './middleware/corsFilter'
 
 const app = express();
 
-app.use(corsFilter)
+
 app.use(bodyparser.json());
+app.use(corsFilter);
 app.use(loggingMiddleware);
 app.use(sessionMiddleware);
 
