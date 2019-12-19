@@ -1,4 +1,4 @@
-import { daoFindReimbursementsByStatus, daoFindReimbursementsByUser, daoPostReimbursement } from "../repository/reimbursement-dao";
+import { daoFindReimbursementsByStatus, daoFindReimbursementsByUser, daoPostReimbursement, daoUpdateReimbursement } from "../repository/reimbursement-dao";
 import { Reimbursement } from "../model/reimbursement";
 
 
@@ -29,6 +29,11 @@ export async function findReimbursementsByUser(id: number): Promise<Reimbursemen
     }
  }
 
-// export async function updateReimbursement(){
-
-// }
+export async function updateReimbursement(r:Reimbursement): Promise<Reimbursement>{
+    try {
+        return await daoUpdateReimbursement(r)
+    } catch(e) {
+        console.log(e)
+        throw e
+    }
+}

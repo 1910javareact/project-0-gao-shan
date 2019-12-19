@@ -1,6 +1,6 @@
 import { PoolClient } from 'pg'
 import { connectionPool } from '.'
-import { /*reimbursementDTOtoReimbursement,*/ multiReimbursementsDTOConverter } from '../util/ReimbursementDTO-to-reimbursement'
+import { multiReimbursementsDTOConverter, reimbursementDTOtoReimbursement } from '../util/ReimbursementDTO-to-reimbursement'
 import { Reimbursement } from '../model/reimbursement'
 
 export async function daoFindReimbursementsByStatus(status: number): Promise<Reimbursement[]>{
@@ -75,6 +75,26 @@ export async function daoPostReimbursement(r:Reimbursement): Promise<Reimburseme
         throw {
             status: 500,
             message: 'Internal Server Error'
+        }
+    } finally {
+        client && client.release()
+    }
+}
+
+export async function daoUpdateReimbursement(r:Reimbursement): Promise<Reimbursement> {
+    let client: PoolClient
+    client = await connectionPool.connect()
+    try {
+        await client.query('UPDATE prc.reimbursements SET author = $2, amount = $3, description = $4, status = $5 WHERE reimbursement_id = $1',
+        [r.reimbursementId, r.author, r.amount, r.description, r.status])
+        const result = client.query('SELECT * FROM prc.reimbursements WHERE reimbursement_id = $1',
+        [r.reimbursementId])
+        return reimbursementDTOtoReimbursement(result)
+    } catch(e) {
+        console.log(e)
+        throw {
+            status: e.status,
+            message: e.message
         }
     } finally {
         client && client.release()
