@@ -3,6 +3,23 @@ import { connectionPool } from '.'
 import { multiReimbursementsDTOConverter, reimbursementDTOtoReimbursement } from '../util/ReimbursementDTO-to-reimbursement'
 import { Reimbursement } from '../model/reimbursement'
 
+export async function daoGetAllReimbursements(): Promise<Reimbursement[]>{
+    let client: PoolClient
+    try {
+        client = await connectionPool.connect()
+        const result = await client.query('SELECT * FROM prc.reimbursements')
+        return multiReimbursementsDTOConverter(result.rows)
+    } catch(e) {
+        console.log(e)
+        throw {
+            status: 500,
+            message: 'Dao Error'
+        }
+    } finally {
+        client && client.release()
+    }
+}
+
 export async function daoFindReimbursementsByStatus(status: number): Promise<Reimbursement[]>{
     let client: PoolClient
     try {

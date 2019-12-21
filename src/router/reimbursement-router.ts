@@ -1,11 +1,20 @@
 import express from 'express';
-//import { User } from '../model/user'
-//import { Reimbursement } from '../model/reimbursement'
-import { findReimbursementsByStatus , findReimbursementsByUser, submitReimbursement , updateReimbursement  } from '../service/reimbursement-service'
+import { findReimbursementsByStatus , findReimbursementsByUser, getAllReimbursements, submitReimbursement , updateReimbursement  } from '../service/reimbursement-service'
 import { Reimbursement } from '../model/reimbursement';
 import { auth } from '../middleware/auth-middleware'
 
 export const reimbursementRouter = express.Router()
+
+async function controllerGetAllReimbursements(req, res) {
+    try {
+        const reimbursements = await getAllReimbursements()
+        res.json(reimbursements)
+   } catch(e) {
+        console.log(e)
+        res.status(e.status).send(e.message);
+   }
+}
+reimbursementRouter.get('', auth(['Finance Manager', 'Admin']), controllerGetAllReimbursements)
 
 async function controllerFindReimbursementsByStatus(req, res) {
 
